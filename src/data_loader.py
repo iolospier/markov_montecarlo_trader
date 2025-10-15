@@ -27,6 +27,3 @@ def init_data(
     print(f"Data initialised and saved to {save_path}")
 
     return df
-
-
-df = init_data("SPY", "2018-01-01", "../data/spy.csv")
