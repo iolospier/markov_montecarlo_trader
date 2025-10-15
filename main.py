@@ -45,7 +45,7 @@ for i in range(N):
     )
     regime_vols = {k: v["sigma"] for k, v in params.items()}
 
-    pnl, positions = apply_trading_policy(
+    pnl, positions, turnover = apply_trading_policy(
         prices,
         regimes,
         slippage=trading_cfg["slippage"],
