@@ -69,4 +69,6 @@ def apply_trading_policy(
             pnl[t:] = pnl[t]
             break
 
-    return pnl, positions
+    flips = np.sum(np.diff(positions) != 0)
+    turnover = flips / len(positions)
+    return pnl, positions, turnover
