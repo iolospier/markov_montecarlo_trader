@@ -1,0 +1,36 @@
+# ==================================================
+#  Markov Monte Carlo Trader - Optimisation Config
+# ==================================================
+
+data:
+  ticker: "QQQ"
+  start_date: "2015-01-01"
+  save_path: "../data/qqq.csv"
+
+simulation:
+  n_paths: 400
+  n_steps: 252
+
+opt:
+  k_vals: [0.8, 1.0, 1.2]
+  persistence: [3, 5, 8]
+  long_only: [true, false]
+  vol_weight: [true]
+  slippage: [0.0001, 0.0002]
+  commission: [0.0, 0.0001]
+  max_dd: [0.10, 0.15]
+
+  # Regularisation weights
+  lambda_dd: 0.7
+  lambda_turn: 0.2
+
+  # Walk-forward validation
+  val_len: 252              # length of each validation period
+  folds:
+    - "2019-12-31"
+    - "2020-12-31"
+    - "2021-12-31"
+    - "2022-12-31"
+
+output:
+  results_dir: "data/optimisation"
