@@ -5,27 +5,27 @@
 # Data Settings
 data:
   ticker: "QQQ"
-  start_date: "2012-01-01"
-  save_path: "../data/iwm.csv"
+  start_date: "2018-01-01"
+  save_path: "../data/qqq.csv"
 
 # Simulation Settings
 simulation:
-  n_paths: 1000           
+  n_paths: 2000           
   n_steps: 252            
   start_state: "Neutral"  
   S0: 100                
 
 # Regime Model Settings
 regimes:
-  scale_mu: 1.0           
+  scale_mu: 1.5           
   auto_estimate: true
 
 # Policy Settings
 trading:
   slippage: 0.0002
-  commission: 0.0000
-  max_drawdown: 0.1
-  persistence: 8
+  commission: 0.0001
+  max_drawdown: 0.15
+  persistence: 3
   long_only: false
   vol_weight: true
 
