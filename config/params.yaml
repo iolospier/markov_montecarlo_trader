@@ -10,23 +10,23 @@ data:
 
 # Simulation Settings
 simulation:
-  n_paths: 1000           
+  n_paths: 5000           
   n_steps: 252            
   start_state: "Neutral"  
   S0: 100                
 
 # Regime Model Settings
 regimes:
-  scale_mu: 1.0           
+  scale_mu: 2.0           
   auto_estimate: true
 
 # Policy Settings
 trading:
-  slippage: 0.0002
-  commission: 0.0000
+  slippage: 0.0001
+  commission: 0.00001
   max_drawdown: 0.1
   persistence: 8
-  long_only: false
+  long_only: true
   vol_weight: true
 
 # Performance Settings
