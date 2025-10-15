@@ -2,20 +2,15 @@ import pandas as pd
 import numpy as np
 
 
-def classify_regimes(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Label each day as Bull, Bear, or Neutral based on return vs volatility.
-    """
-    if "Return" not in df.columns or "Volatility" not in df.columns:
-        raise ValueError("DataFrame must include 'Return' and 'Volatility' columns.")
-
-    df = df.copy()
-    conditions = [
-        df["Return"] > df["Volatility"],
-        df["Return"] < -df["Volatility"],
+def classify_regimes(df, k: float = 1.0) -> pd.DataFrame:
+    """Classify regimes based on returns vs volatility threshold."""
+    conds = [
+        df["Return"] > k * df["Volatility"],
+        df["Return"] < -k * df["Volatility"],
     ]
     choices = ["Bull", "Bear"]
-    df["State"] = np.select(conditions, choices, default="Neutral")
+    df = df.copy()
+    df["State"] = np.select(conds, choices, default="Neutral")
     return df
 
 
