@@ -47,3 +47,16 @@ def simulate_states(P: pd.DataFrame, start_state: str, n_steps: int = 252) -> li
         current = np.random.choice(states, p=probs)
         sequence.append(current)
     return sequence
+
+
+def estimate_regime_params(df, state_col="State", ret_col="Return"):
+    """
+    Estimate mean drift (mu) and volatility (sigma) for each regime.
+    Uses daily returns from the classified dataset.
+    """
+    regime_params = {}
+    for state, group in df.groupby(state_col):
+        mu = group[ret_col].mean()
+        sigma = group[ret_col].std()
+        regime_params[state] = {"mu": mu, "sigma": sigma}
+    return regime_params
