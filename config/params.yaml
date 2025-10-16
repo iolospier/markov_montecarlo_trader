@@ -1,35 +1,29 @@
-# ==================================================
-#  Markov Monte Carlo Trading Simulator Parameters
-# ==================================================
+general:
+  seed: 42
 
-# Data Settings
 data:
-  ticker: "QQQ"
+  ticker: "QQQQ"
   start_date: "2012-01-01"
-  save_path: "../data/iwm.csv"
+  save_path: "data/qqq.csv"
 
-# Simulation Settings
 simulation:
-  n_paths: 5000           
-  n_steps: 252            
-  start_state: "Neutral"  
-  S0: 100                
+  n_paths: 5000
+  n_steps: 252
+  start_state: "Neutral"
+  S0: 100
 
-# Regime Model Settings
 regimes:
-  scale_mu: 2.0           
+  scale_mu: 2.5
   auto_estimate: true
 
-# Policy Settings
 trading:
   slippage: 0.0001
-  commission: 0.00001
-  max_drawdown: 0.1
+  commission: 0.0001
+  max_drawdown: 0.2
   persistence: 8
   long_only: true
-  vol_weight: true
+  vol_weight: false
 
-# Performance Settings
 performance:
   plot_sharpe_hist: true
   plot_equity_curves: false

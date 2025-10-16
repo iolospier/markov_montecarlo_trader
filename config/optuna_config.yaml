@@ -1,20 +1,14 @@
-# ===============================================
-#  Optuna Bayesian Optimisation Configuration
-# ===============================================
-
-# meta-parameters
 optuna:
-  n_trials: 500          # total optimisation trials
-  timeout: 3600         # optional time limit in seconds (30 min)
-  seed: 42              # random seed for reproducibility
-  direction: "maximize" # maximise Sharpe or minimise negative Sharpe
+  direction: "maximize"
+  n_trials: 30
+  timeout: 600
+  seed: 42
 
-# search space parameters
 search_space:
-  scale_mu: [0.5, 3.0]         # multiplier on drift across regimes
-  persistence: [2, 20]         # minimum regime duration before switching
-  slippage: [0.0001, 0.0001]  # trading cost
-  commission: [0.0001, 0.0001]    # broker fee
-  long_only: [true, false]     # categorical
-  vol_weight: [true, false]    # categorical
-  max_drawdown: [0.05, 0.3]    # constraint tolerance
+  scale_mu: [0.5, 4.0]
+  persistence: [2, 15]
+  slippage: [0.00005, 0.001]
+  commission: [0.00005, 0.001]
+  max_drawdown: [0.05, 0.25]
+  long_only: [true, false]
+  vol_weight: [true, false]
