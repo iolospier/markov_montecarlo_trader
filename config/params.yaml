@@ -2,12 +2,12 @@ general:
   seed: 42
 
 data:
-  ticker: "QQQ"
+  tickers: ["QQQ", "IWM", "SPY"]
   start_date: "2012-01-01"
-  save_path: "data/qqq.csv"
+  save_dir: "data"
 
 simulation:
-  n_paths: 50000
+  n_paths: 5000
   n_steps: 252
   start_state: "Neutral"
   S0: 100

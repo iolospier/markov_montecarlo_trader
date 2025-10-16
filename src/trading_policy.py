@@ -17,37 +17,61 @@ def apply_trading_policy(
     """Apply a regime-based trading policy with optional persistence,
     volatility weighting, and long-only constraints.
     """
+
     logger = logger or get_logger(".")
-    n = len(prices)
+    n_prices = len(prices)
+    n_regimes = len(regimes)
+
+    if n_prices == 0 or n_regimes == 0:
+        logger.warning("Empty prices or regimes passed to apply_trading_policy.")
+        return np.array([]), np.array([]), 0.0
+
+    # Align both arrays in case Monte Carlo generated a shorter or longer path
+    n = min(n_prices, n_regimes)
+    prices = np.asarray(prices[:n])
+    regimes = list(regimes[:n])
+
     positions = np.zeros(n)
     pnl = np.zeros(n)
     equity = 1.0
     peak_equity = 1.0
 
-    # Smooth regimes for persistence
+    #  Step 1: Smooth regimes for persistence
     stable_regimes = regimes.copy()
-    for i in range(persistence, n):
-        recent = regimes[i - persistence : i]
-        if len(set(recent)) == 1:
-            stable_regimes[i] = regimes[i]
-        else:
-            stable_regimes[i] = stable_regimes[i - 1]
 
-    # Assign positions by regime
+    if persistence > 1:
+        for i in range(persistence, n):
+            recent = regimes[i - persistence : i]
+            # If recent k regimes are identical, keep that state; otherwise persist previous
+            if len(set(recent)) == 1:
+                stable_regimes[i] = regimes[i]
+            else:
+                # Guard against i == 0 or uninitialised index
+                stable_regimes[i] = stable_regimes[i - 1] if i > 0 else regimes[i]
+    else:
+        stable_regimes = regimes.copy()
+
+    #  Step 2: Assign positions by regime
     for t in range(1, n):
         r = stable_regimes[t]
+
         if long_only:
             positions[t] = 1 if r == "Bull" else 0
         else:
-            positions[t] = 1 if r == "Bull" else -1 if r == "Bear" else 0
+            if r == "Bull":
+                positions[t] = 1
+            elif r == "Bear":
+                positions[t] = -1
+            else:
+                positions[t] = 0
 
-        # Volatility weighting
+        # Volatility weighting (optional)
         if vol_weight and regime_vols is not None:
             sigma = regime_vols.get(r, 1e-6)
             norm_factor = 1 / max(sigma, 1e-6)
-            positions[t] *= norm_factor / 100  # keep leverage realistic
+            positions[t] *= norm_factor / 100.0  # scale down leverage
 
-    # Compute daily returns
+    #  Step 3: Compute daily returns and PnL
     returns = np.diff(prices) / prices[:-1]
 
     for t in range(1, n):
@@ -63,8 +87,9 @@ def apply_trading_policy(
             logger.info(f"Max drawdown triggered at step {t}, trading halted.")
             break
 
+    #  Step 4: Compute turnover statistics
     flips = np.sum(np.diff(positions) != 0)
-    turnover = flips / len(positions)
+    turnover = flips / max(len(positions), 1)
 
     logger.debug(
         f"Trading policy applied: long_only={long_only}, "
