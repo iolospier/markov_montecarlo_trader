@@ -1,0 +1,10 @@
+11:59:56 | INFO | === Starting Markov Monte Carlo Simulation ===
+11:59:56 | INFO | Downloading QQQ data from Yahoo Finance...
+11:59:56 | INFO | Data initialised and saved to data/qqq.csv
+11:59:56 | INFO | Classified regimes using k=1.0.
+11:59:57 | INFO | Estimated transition matrix between regimes.
+11:59:57 | INFO | Estimated regime parameters for all states.
+11:59:57 | INFO | Saved performance summary to results/run_20251016_115953/performance_summary.csv
+11:59:57 | INFO | Aggregate Sharpe mean=0.0189 ±nan, Max DD mean=0.0053
+11:59:57 | INFO | Simulation complete. Results saved.
+11:59:57 | INFO | All outputs in: results/run_20251016_115953
