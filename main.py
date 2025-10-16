@@ -1,73 +1,81 @@
+# main.py
+from src.utils.config_loader import load_config
+from src.utils.seed_utils import set_global_seed
+from src.utils.io_utils import create_run_dirs
+from src.utils.logger import get_logger
+from src.utils.timer import timed
 from src.data_loader import init_data
 from src.regimes import (
     classify_regimes,
     estimate_transition_matrix,
     estimate_regime_params,
 )
-from src.montecarlo_sim import run_monte_carlo
+from src.stochastic_models import simulate_regime_gbm
 from src.trading_policy import apply_trading_policy
 from src.performance import aggregate_performance
-import matplotlib.pyplot as plt
-from src.stochastic_models import simulate_regime_gbm
-import numpy as np
 
-import yaml
 
-with open("config/params.yaml", "r") as f:
-    cfg = yaml.safe_load(f)
+@timed
+def main():
+    # Setup
+    config = load_config("config/params.yaml")
+    run_dir = create_run_dirs("results")
+    seed = config.get("general", {}).get("seed", 42)
+    set_global_seed(seed)
+    logger = get_logger(run_dir)
 
-# load and preprocess data
-data_cfg = cfg["data"]
-df = init_data(data_cfg["ticker"], data_cfg["start_date"], data_cfg["save_path"])
-df = classify_regimes(df)
-P = estimate_transition_matrix(df)
-params = estimate_regime_params(df)
+    logger.info("=== Starting Markov Monte Carlo Simulation ===")
 
-# stress test dependent on config
-if cfg["regimes"]["auto_estimate"]:
-    scale_mu = cfg["regimes"]["scale_mu"]
-    for r in params:
-        params[r]["mu"] *= scale_mu
+    # Data
+    df = init_data(
+        config["data"]["ticker"],
+        config["data"]["start_date"],
+        config["data"]["save_path"],
+        logger=logger,
+    )
+    df = classify_regimes(df, logger=logger)
+    P = estimate_transition_matrix(df, logger=logger)
+    params = estimate_regime_params(df, logger=logger)
 
-# run monte carlo simulations
-sim_cfg = cfg["simulation"]
-trading_cfg = cfg["trading"]
-N = sim_cfg["n_paths"]
-
-all_pnls = []
-for i in range(N):
+    # Simulation
+    sim_cfg = config["simulation"]
     prices, regimes = simulate_regime_gbm(
         P,
         start_state=sim_cfg["start_state"],
         params=params,
         n_steps=sim_cfg["n_steps"],
         S0=sim_cfg["S0"],
+        seed=seed,
+        logger=logger,
     )
+
     regime_vols = {k: v["sigma"] for k, v in params.items()}
 
     pnl, positions, turnover = apply_trading_policy(
         prices,
         regimes,
-        slippage=trading_cfg["slippage"],
-        commission=trading_cfg["commission"],
-        max_drawdown=trading_cfg["max_drawdown"],
-        persistence=trading_cfg["persistence"],
-        long_only=trading_cfg["long_only"],
-        vol_weight=trading_cfg["vol_weight"],
+        slippage=config["trading"]["slippage"],
+        commission=config["trading"]["commission"],
+        max_drawdown=config["trading"]["max_drawdown"],
+        persistence=config["trading"]["persistence"],
+        long_only=config["trading"]["long_only"],
+        vol_weight=config["trading"]["vol_weight"],
         regime_vols=regime_vols,
+        logger=logger,
     )
-    all_pnls.append(pnl)
 
-# evaluate performance
-df_metrics, summary = aggregate_performance(all_pnls)
+    # Performance
+    aggregate_performance([pnl], run_dir=run_dir, logger=logger)
 
-print("\nAggregate Performance Summary:")
-print(summary.round(6))
+    logger.info("Simulation complete. Results saved.")
+    logger.info(f"All outputs in: {run_dir}")
 
-if cfg["performance"]["plot_sharpe_hist"]:
-    plt.figure(figsize=(8, 4))
-    plt.hist(df_metrics["sharpe"].dropna(), bins=30, edgecolor="k", alpha=0.7)
-    plt.title("Distribution of Sharpe Ratios (Monte Carlo Simulations)")
-    plt.xlabel("Sharpe Ratio")
-    plt.ylabel("Frequency")
-    plt.show()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        import traceback
+
+        print("Fatal error during run:", e)
+        traceback.print_exc()

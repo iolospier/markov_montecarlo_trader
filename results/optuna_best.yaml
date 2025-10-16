@@ -1,7 +1,0 @@
-commission: 0.0001
-long_only: true
-max_drawdown: 0.21390760846568044
-persistence: 8
-scale_mu: 2.8456271527988486
-slippage: 0.0001
-vol_weight: false
