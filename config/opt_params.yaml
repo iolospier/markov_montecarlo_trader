@@ -33,4 +33,4 @@ opt:
     - "2022-12-31"
 
 output:
-  results_dir: "data/optimisation"
+  results_dir: "results/optimisation"
