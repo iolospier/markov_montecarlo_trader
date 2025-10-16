@@ -60,4 +60,8 @@ def aggregate_performance(
         f"Max DD mean={summary.loc['max_drawdown', 'mean']:.4f}"
     )
 
-    return df, summary
+    summary_rounded = summary.round(12)  # round to 6 decimal places
+    summary_rounded.to_csv(perf_csv, float_format="%.6f")
+    summary_rounded.sort_index(inplace=True)
+
+    return df, summary_rounded

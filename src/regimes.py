@@ -42,20 +42,15 @@ def estimate_transition_matrix(df: pd.DataFrame, logger=None) -> pd.DataFrame:
 
 
 def simulate_states(
-    P: pd.DataFrame,
-    start_state: str,
-    n_steps: int = 252,
-    seed: int | None = None,
-    logger=None,
+    P: pd.DataFrame, start_state: str, n_steps: int = 252, rng=None, logger=None
 ) -> list[str]:
-    """Generate a synthetic sequence of regimes using the transition matrix P."""
+    """Generate a synthetic sequence of regimes using the shared RNG."""
     logger = logger or get_logger(".")
-    rng = np.random.default_rng(seed)
+    rng = rng or np.random.default_rng()
 
     states = list(P.index)
     if start_state not in states:
-        logger.error(f"Invalid start state '{start_state}' — must be one of {states}")
-        raise ValueError(f"Invalid start state: {start_state}")
+        raise ValueError(f"Invalid start_state '{start_state}'")
 
     sequence = [start_state]
     current = start_state
@@ -64,7 +59,7 @@ def simulate_states(
         current = rng.choice(states, p=probs)
         sequence.append(current)
 
-    logger.debug(f"Simulated {n_steps} regime states from {start_state}.")
+    logger.debug(f"Simulated {n_steps} regimes using shared RNG.")
     return sequence
 
 

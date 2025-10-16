@@ -8,49 +8,51 @@ from src.utils.timer import timed
 
 @timed
 def run_monte_carlo(
-    P: pd.DataFrame,
-    params: dict,
-    n_paths: int = 1000,
-    n_steps: int = 252,
-    S0: float = 100.0,
-    start_state: str = "Neutral",
-    random_seed: int | None = None,
+    P,
+    params,
+    n_paths=1000,
+    n_steps=252,
+    S0=100.0,
+    start_state="Neutral",
+    rng=None,
     logger=None,
 ):
-    """
-    Run a Monte Carlo simulation of regime-switching GBM price paths.
-    """
+    """Run Monte Carlo simulation with a shared RNG for full reproducibility."""
     logger = logger or get_logger(".")
-    rng = np.random.default_rng(random_seed)
+    rng = rng or np.random.default_rng()
 
     all_prices = np.zeros((n_paths, n_steps))
     all_returns = np.zeros(n_paths)
+    logger.info(f"Running Monte Carlo: {n_paths} paths × {n_steps} steps")
 
-    logger.info(f"Running Monte Carlo simulation: {n_paths} paths × {n_steps} steps")
-
-    def simulate_path(i):
-        local_seed = None if random_seed is None else random_seed + i
+    def simulate_path(_):
         try:
             prices, _ = simulate_regime_gbm(
-                P, start_state, params, n_steps, S0, seed=local_seed
+                P, start_state, params, n_steps, int(S0), rng=rng, logger=logger
             )
             return prices, prices[-1] / prices[0] - 1
         except Exception as e:
-            logger.warning(f"Path {i} failed: {e}")
-            return np.full(n_steps, np.nan), np.nan
+            logger.warning(f"Path failed: {e}")
+            return (
+                np.full(n_steps, np.nan),
+                np.nan,
+            )  # Ensure a valid tuple is always returned
+
+    from joblib import Parallel, delayed
 
     results = Parallel(n_jobs=-1)(delayed(simulate_path)(i) for i in range(n_paths))
 
-    valid_results = [res for res in results if res is not None]
-    for i, (prices, ret) in enumerate(valid_results):
+    for i, result in enumerate(results):
+        if result is None:
+            logger.warning(f"Skipping path {i} due to None result.")
+            continue
+        prices, ret = result
         all_prices[i, :] = prices
         all_returns[i] = ret
 
-    summary = {
+    logger.info("Monte Carlo simulation complete.")
+    return {
         "prices": all_prices,
         "final_prices": all_prices[:, -1],
         "returns": all_returns,
     }
-
-    logger.info("Monte Carlo simulation complete.")
-    return summary

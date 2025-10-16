@@ -22,6 +22,9 @@ def main():
     run_dir = create_run_dirs("results")
     seed = config.get("general", {}).get("seed", 42)
     set_global_seed(seed)
+    import numpy as np
+
+    GLOBAL_RNG = np.random.default_rng(seed)
     logger = get_logger(run_dir)
 
     logger.info("=== Starting Markov Monte Carlo Simulation ===")
@@ -45,7 +48,7 @@ def main():
         params=params,
         n_steps=sim_cfg["n_steps"],
         S0=sim_cfg["S0"],
-        seed=seed,
+        rng=GLOBAL_RNG,
         logger=logger,
     )
 
