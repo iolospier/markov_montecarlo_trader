@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from src.stochastic_models import simulate_regime_gbm
+from src.utils.logger import get_logger
+from src.utils.timer import timed
 
 
+@timed
 def run_monte_carlo(
     P: pd.DataFrame,
     params: dict,
@@ -11,51 +15,42 @@ def run_monte_carlo(
     S0: float = 100.0,
     start_state: str = "Neutral",
     random_seed: int | None = None,
+    logger=None,
 ):
     """
     Run a Monte Carlo simulation of regime-switching GBM price paths.
-
-    Parameters
-    ----------
-    P : pd.DataFrame
-        Transition matrix between regimes.
-    params : dict
-        Dictionary of regime-specific (mu, sigma) parameters.
-    n_paths : int
-        Number of Monte Carlo simulations.
-    n_steps : int
-        Number of time steps per simulation.
-    S0 : float
-        Initial price.
-    start_state : str
-        Starting regime.
-    random_seed : int or None
-        Seed for reproducibility.
-
-    Returns
-    -------
-    results : dict
-        {
-            "prices": np.ndarray of shape (n_paths, n_steps),
-            "final_prices": np.ndarray of shape (n_paths,),
-            "returns": np.ndarray of shape (n_paths,),
-        }
     """
-    if random_seed is not None:
-        np.random.seed(random_seed)
+    logger = logger or get_logger(".")
+    rng = np.random.default_rng(random_seed)
 
     all_prices = np.zeros((n_paths, n_steps))
     all_returns = np.zeros(n_paths)
 
-    for i in range(n_paths):
-        prices, _ = simulate_regime_gbm(P, start_state, params, n_steps, S0)
-        all_prices[i, :] = prices
-        all_returns[i] = prices[-1] / prices[0] - 1
+    logger.info(f"Running Monte Carlo simulation: {n_paths} paths × {n_steps} steps")
 
-    results = {
+    def simulate_path(i):
+        local_seed = None if random_seed is None else random_seed + i
+        try:
+            prices, _ = simulate_regime_gbm(
+                P, start_state, params, n_steps, S0, seed=local_seed
+            )
+            return prices, prices[-1] / prices[0] - 1
+        except Exception as e:
+            logger.warning(f"Path {i} failed: {e}")
+            return np.full(n_steps, np.nan), np.nan
+
+    results = Parallel(n_jobs=-1)(delayed(simulate_path)(i) for i in range(n_paths))
+
+    valid_results = [res for res in results if res is not None]
+    for i, (prices, ret) in enumerate(valid_results):
+        all_prices[i, :] = prices
+        all_returns[i] = ret
+
+    summary = {
         "prices": all_prices,
         "final_prices": all_prices[:, -1],
         "returns": all_returns,
     }
 
-    return results
+    logger.info("Monte Carlo simulation complete.")
+    return summary
